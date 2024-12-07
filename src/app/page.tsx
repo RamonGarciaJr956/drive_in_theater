@@ -161,7 +161,7 @@ export default function HomePage() {
           <div className="flex-1 flex flex-col md:flex-row justify-between">
             <div className='flex flex-col justify-between pb-10 md:pb-20 pt-4 px-4 md:pl-20 text-center md:text-left'>
               <div>
-                <h1 className='text-4xl md:text-9xl text-white uppercase font-lexend underline max-w-full md:max-w-[50vw]'>
+                <h1 className='text-4xl md:text-8xl text-white uppercase font-lexend underline max-w-full md:max-w-[50vw]'>
                   {selectedMovie?.MovieName}
                 </h1>
                 <p className='text-white text-base md:text-xl font-extralight font-lexend p-2'>
