@@ -128,6 +128,7 @@ export default function HomePage() {
             autoPlay
             loop
             muted
+            playsInline
             disablePictureInPicture
           >
             <source src={selectedMovie!.MovieVideo} type="video/mp4" />
