@@ -215,7 +215,7 @@ export default function HomePage() {
                       <button key={movie.id} onClick={() => {
                         setSelectedMovieIndex(movies.findIndex(m => m.id === movie.id));
                       }}>
-                        <Image className='rounded-sm' src={movie.MovieImage} alt={movie.MovieName} width={100} height={100} />
+                        <Image className='rounded-sm w-[125px] md:w-[175px]' src={movie.MovieImage} alt={movie.MovieName} width={175} height={175} />
                       </button>
                     ))
                   }
