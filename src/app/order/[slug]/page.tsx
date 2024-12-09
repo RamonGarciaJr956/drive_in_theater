@@ -9,7 +9,6 @@ import {
     QrCodeIcon,
     DollarSignIcon,
     UsersIcon,
-    Loader,
     Loader2
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';

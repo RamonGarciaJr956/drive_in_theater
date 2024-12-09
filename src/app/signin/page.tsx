@@ -2,7 +2,8 @@
 
 import { User, Lock } from 'lucide-react'
 import Link from 'next/link'
-import { FormEvent, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
 import { signIn } from 'next-auth/react'
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';

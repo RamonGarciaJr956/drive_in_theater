@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
     TicketIcon,
     UserIcon,
-    CreditCardIcon,
     CalendarIcon,
     ChevronRightIcon,
     Loader2
