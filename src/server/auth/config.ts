@@ -1,6 +1,10 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
-import DiscordProvider from "next-auth/providers/discord";
+import Credentials from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import * as bcrypt from "bcrypt";
+import { randomUUID } from 'crypto';
+import { encode as defaultEncode } from "next-auth/jwt";
 
 import { db } from "~/server/db";
 import {
@@ -9,6 +13,7 @@ import {
   users,
   verificationTokens,
 } from "~/server/db/schema";
+import { eq } from "drizzle-orm";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -38,7 +43,6 @@ declare module "next-auth" {
  */
 export const authConfig = {
   providers: [
-    DiscordProvider,
     /**
      * ...add more providers here.
      *
@@ -48,6 +52,52 @@ export const authConfig = {
      *
      * @see https://next-auth.js.org/providers/github
      */
+    GoogleProvider({
+      clientId: process.env.AUTH_GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.AUTH_GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true
+    }),
+    Credentials({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        try {
+          const user = await db.select().from(users).where(eq(users.email, credentials.email as string)).limit(1);
+
+          if (!user || user.length === 0) {
+            throw new Error('UserNotFound');
+          }
+
+          const foundUser = user[0];
+
+          if (!foundUser?.password) {
+            throw new Error('PasswordNotSet');
+          }
+
+          const storedHash = foundUser.password;
+
+          const validPassword = await bcrypt.compare(credentials.password as string, storedHash);
+
+          if (!validPassword) {
+            throw new Error('InvalidCredentials');
+          }
+
+          const { ...userWithoutPassword } = foundUser;
+
+          return userWithoutPassword;
+        } catch (error) {
+          console.error('Authorization error:', error);
+          return null;
+        }
+      },
+    })
   ],
   adapter: DrizzleAdapter(db, {
     usersTable: users,
@@ -56,6 +106,12 @@ export const authConfig = {
     verificationTokensTable: verificationTokens,
   }),
   callbacks: {
+    async jwt({ token, account }) {
+      if (account?.provider === "credentials") {
+        token.credentials = true;
+      }
+      return token;
+    },
     session: ({ session, user }) => ({
       ...session,
       user: {
@@ -64,4 +120,27 @@ export const authConfig = {
       },
     }),
   },
+  jwt: {
+    encode: async function (params) {
+      if (params.token?.credentials) {
+        const sessionToken: string = randomUUID();
+        //expires in 1 day
+        const expiresAt = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
+
+        await db.insert(sessions).values({
+          sessionToken: sessionToken,
+          userId: params.token.sub!,
+          expires: expiresAt
+        });
+
+        return sessionToken;
+      }
+
+      return defaultEncode(params);
+    },
+  },
+  session: {
+    maxAge: 1 * 24 * 60 * 60,
+  },
+  secret: process.env.AUTH_SECRET!,
 } satisfies NextAuthConfig;

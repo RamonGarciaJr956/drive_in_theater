@@ -1,29 +1,18 @@
 "use client";
 import Image from 'next/image';
-import { Banknote, ChevronLeft, ChevronRight, Clock, Facebook, Instagram, Menu, Timer, X } from 'lucide-react';
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { Banknote, ChevronLeft, ChevronRight, Clock, Timer } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import MobileMenu from './components/MobileMenu';
-
-const generateStars = (count = 50) => {
-  return Array.from({ length: count }, (_, index) => ({
-    id: index,
-    left: Math.random() * 100,
-    top: Math.random() * 100,
-    size: Math.random() * 3 + 1,
-    delay: Math.random() * 2000,
-    fadeDuration: Math.random() * 2 + 5,
-    opacity: Math.random() * 0.5 + 0.5,
-    twinkleIntensity: Math.random() * 0.5 + 0.5
-  }));
-};
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
 export default function HomePage() {
   const discountDay = useMemo(() => new Date().getDay() === 2, []);
+  const discountAmount = useMemo(() => discountDay ? 0.5 : 1, [discountDay]);
 
   const movies = useMemo(() => [
     {
-      id: 223231,
+      id: 1,
       MovieName: 'Moana 2',
       MovieImage: '/moana 2.webp',
       MovieDescription: 'Playing 6/12 @ 6:15pm',
@@ -48,51 +37,35 @@ export default function HomePage() {
     }
   ], []);
 
+  interface Star {
+    id: number;
+    top: string;
+    left: string;
+    scale: number;
+    duration: string;
+    delay: string;
+  }
+
   const [selectedMovie, setSelectedMovie] = useState(movies[0]);
   const [selectedMovieIndex, setSelectedMovieIndex] = useState(0);
-  const [stars, setStars] = useState<Array<{
-    id: number;
-    left: number;
-    top: number;
-    size: number;
-    delay: number;
-    fadeDuration: number;
-    opacity: number
-  }>>([]);
-  const [totalHeight, setTotalHeight] = useState(0);
+  const [stars, setStars] = useState<Star[]>([]);
 
-  const ticketsRef = useRef<HTMLElement>(null);
-  const faqRef = useRef<HTMLElement>(null);
-  const footerRef = useRef<HTMLElement>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  useEffect(() => {
+    const starArray = Array.from({ length: 200 }).map((_, index) => ({
+      id: index,
+      top: `${Math.random() * 100}%`,
+      left: `${Math.random() * 100}%`,
+      scale: Math.random() * 1.05,
+      duration: `${Math.random() + 4}s`,
+      delay: `${Math.random()}s`,
+    }));
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
+    setStars(starArray);
+  }, []);
 
   useEffect(() => {
     setSelectedMovie(movies[selectedMovieIndex]);
   }, [selectedMovieIndex, movies]);
-
-  useEffect(() => {
-    setStars(generateStars(200));
-
-    const calculateTotalHeight = () => {
-      const firstSectionHeight = window.innerHeight;
-      const ticketsHeight = ticketsRef.current?.offsetHeight ?? 0;
-      const faqHeight = faqRef.current?.offsetHeight ?? 0;
-      const footerHeight = footerRef.current?.offsetHeight ?? 0;
-
-      setTotalHeight(firstSectionHeight + ticketsHeight + faqHeight + footerHeight);
-    };
-
-    calculateTotalHeight();
-    window.addEventListener('resize', calculateTotalHeight);
-
-    return () => {
-      window.removeEventListener('resize', calculateTotalHeight);
-    };
-  }, []);
 
   function minutesToHoursMinutes(totalMinutes: number) {
     const hours = Math.floor(totalMinutes / 60);
@@ -136,28 +109,7 @@ export default function HomePage() {
         </div>
 
         <div className="flex-1 z-10 relative flex flex-col bg-gradient-to-t from-black via-black/50 to-black/50">
-          <div className="flex flex-row p-4 md:p-6 w-full justify-between items-center">
-            <Link href={'/'} className="mb-0">
-              <Image src="/logo.webp" alt="logo" width={84} height={84} />
-            </Link>
-
-            <div className="md:hidden">
-              <button
-                onClick={toggleMenu}
-                className="text-white focus:outline-none"
-              >
-                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
-            </div>
-
-            <ul className='hidden md:flex flex-row h-fit gap-4 font-lexend font-light'>
-              <li><Link href={'/'} className="text-white text-lg py-1 px-5 rounded-full hover:backdrop-blur-xl hover:bg-white/25">Home</Link></li>
-              <li><Link href={'/#faq'} className="text-white text-lg py-1 px-5 rounded-full hover:backdrop-blur-xl hover:bg-white/25">FAQ</Link></li>
-              <li><Link href={'/#tickets'} className="text-white text-lg py-3 px-5 rounded-sm backdrop-blur-xl bg-white/25 hover:bg-white/50">Buy Your Tickets</Link></li>
-            </ul>
-
-            <MobileMenu isOpen={isMenuOpen} toggleMenu={toggleMenu} />
-          </div>
+          <Navbar />
 
           <div className="flex-1 flex flex-col md:flex-row justify-between">
             <div className='flex flex-col justify-between pb-10 md:pb-20 pt-4 px-4 md:pl-20 text-center md:text-left'>
@@ -240,141 +192,102 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div
-        className="absolute inset-0 pointer-events-none z-10"
-        style={{
-          height: `${totalHeight}px`,
-          width: '100%'
-        }}
-      >
-        {stars.map(star => (
-          <div
-            key={star.id}
-            className="absolute bg-white/50 rounded-full opacity-0 animate-twinkle"
-            style={{
-              left: `${star.left}%`,
-              top: `${star.top}%`,
-              width: `${star.size}px`,
-              height: `${star.size}px`,
-              animationDelay: `${star.delay}ms`,
-              animationDuration: `${star.fadeDuration}s`,
-              opacity: star.opacity,
-              animationTimingFunction: 'ease-in-out'
-            }}
-          />
-        ))}
-      </div>
+      <div className='relative'>
+        <div className='absolute w-full h-full z-10'>
+          {stars.map((star) => (
+            <div
+              key={star.id}
+              className="absolute w-1 h-1 bg-white/50 rounded-full animate-sparkle"
+              style={{
+                top: star.top,
+                left: star.left,
+                scale: star.scale,
+                animationDuration: star.duration,
+                animationDelay: star.delay,
+              }}
+            />
+          ))}
+        </div>
 
-      <section ref={ticketsRef} id='tickets' className='bg-black py-16 relative overflow-hidden'>
-        <div className='max-w-6xl mx-auto relative z-10 px-4'>
-          <div className='text-center mb-12'>
-            <h2 className='text-4xl md:text-5xl font-lexend text-white font-bold mb-4'>Buy Your Tickets</h2>
-            <p className='text-xl font-light font-lexend text-white/70 max-w-3xl mx-auto'>
-              Experience the magic of cinema under the stars. Select your favorite movie and get ready for an unforgettable night.
-            </p>
-          </div>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8'>
-            {movies.map((movie) => (
-              <div
-                key={movie.id}
-                className='bg-white/5 border border-white/10 rounded-xl overflow-hidden transition-all duration-300 hover:border-white/20 hover:shadow-xl'
-              >
-                <div className='relative w-full aspect-[3/4] overflow-hidden'>
-                  <Image
-                    src={movie.MovieImage}
-                    alt={movie.MovieName}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className='object-cover transition-transform duration-300 group-hover:scale-105'
-                  />
-                </div>
-                <div className='p-6'>
-                  <h3 className='text-2xl font-lexend text-white font-semibold mb-3'>{movie.MovieName}</h3>
-                  <div className='mb-4 space-y-2'>
-                    <p className='text-white/70 flex items-center gap-2'>
-                      <Clock />
-                      Playing @ {epochToTimeAMPM(movie.MovieStartTime)}
-                    </p>
-                    <p className='text-white/70 flex items-center gap-2'>
-                      <Timer />
-                      Duration {minutesToHoursMinutes(movie.MovieDuration)} minutes
-                    </p>
-                    <p className='text-white/70 flex items-center gap-2'>
-                      <Banknote />
-                      {discountDay ? 'Discount Tuesday $10 per vehicle' : `$${movie.MoviePricePerCar} per vehicle`}
-                    </p>
+        <section id='tickets' className='bg-black py-16 relative overflow-hidden'>
+          <div className='max-w-6xl mx-auto relative z-10 px-4'>
+            <div className='text-center mb-12'>
+              <h2 className='text-4xl md:text-5xl font-lexend text-white font-bold mb-4'>Buy Your Tickets</h2>
+              <p className='text-xl font-light font-lexend text-white/70 max-w-3xl mx-auto'>
+                Experience the magic of cinema under the stars. Select your favorite movie and get ready for an unforgettable night.
+              </p>
+            </div>
+            <div className='flex flex-col md:flex-row gap-8'>
+              {movies.map((movie) => (
+                <div
+                  key={movie.id}
+                  className='bg-white/5 border border-white/10 flex-1 rounded-xl overflow-hidden transition-all duration-300 hover:border-white/20 hover:shadow-xl'
+                >
+                  <div className='relative w-full aspect-[3/4] overflow-hidden'>
+                    <Image
+                      src={movie.MovieImage}
+                      alt={movie.MovieName}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className='object-cover transition-transform duration-300 group-hover:scale-105'
+                    />
                   </div>
-                  <button className='w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg'>
-                    Get Your Tickets
-                  </button>
+                  <div className='p-6'>
+                    <h3 className='text-2xl font-lexend text-white font-semibold mb-3'>{movie.MovieName}</h3>
+                    <div className='mb-4 space-y-2'>
+                      <p className='text-white/70 flex items-center gap-2'>
+                        <Clock />
+                        Playing @ {epochToTimeAMPM(movie.MovieStartTime)}
+                      </p>
+                      <p className='text-white/70 flex items-center gap-2'>
+                        <Timer />
+                        Duration {minutesToHoursMinutes(movie.MovieDuration)} minutes
+                      </p>
+                      <p className='text-white/70 flex items-center gap-2'>
+                        <Banknote />
+                        {discountDay ? `Discount Tuesday $${movie.MoviePricePerCar * discountAmount} per vehicle` : `$${movie.MoviePricePerCar} per vehicle`}
+                      </p>
+                    </div>
+                    <button className='w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg'>
+                      Get Your Tickets
+                    </button>
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id='faq' className='bg-black py-12 relative overflow-hidden'>
+          <div className='max-w-4xl mx-auto relative z-10'>
+            <h2 className='text-white md:text-5xl font-lexend mb-8 md:p-0 px-6 text-4xl'>Frequently Asked Questions</h2>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+              <div className='bg-black/25 backdrop-blur-xl rounded-lg p-6'>
+                <h3 className='text-white text-2xl font-lexend mb-4'>Where are you located?</h3>
+                <p className='text-white/50 text-lg font-lexend'>We are at 3116 Ash Avenue McAllen Texas 78501. It&apos;s by business 83 between Ware and 29th.</p>
               </div>
-            ))}
+              <div className='bg-black/25 backdrop-blur-xl rounded-lg p-6'>
+                <h3 className='text-white text-2xl font-lexend mb-4'>What is the price per vehicle?</h3>
+                <p className='text-white/50 text-lg font-lexend'>The price is $20 per vehicle, we have discount Tuesday for $10 per vehicle.</p>
+              </div>
+              <div className='bg-black/25 backdrop-blur-xl rounded-lg p-6'>
+                <h3 className='text-white text-2xl font-lexend mb-4'>Can we bring our own snacks?</h3>
+                <p className='text-white/50 text-lg font-lexend'>We have concessions but you are welcome to bring your favorites.</p>
+              </div>
+              <div className='bg-black/25 backdrop-blur-xl rounded-lg p-6'>
+                <h3 className='text-white text-2xl font-lexend mb-4'>What time and days do you open?</h3>
+                <p className='text-white/50 text-lg font-lexend'>We are open everyday at 6:15pm, show starts at 7:00pm.</p>
+              </div>
+              <div className='bg-black/25 backdrop-blur-xl rounded-lg p-6'>
+                <h3 className='text-white text-2xl font-lexend mb-4'>Can we bring our pets?</h3>
+                <p className='text-white/50 text-lg font-lexend'>Unfortunately pets are not allowed.</p>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section ref={faqRef} id='faq' className='bg-black py-12 relative overflow-hidden'>
-        <div className='max-w-4xl mx-auto relative z-10'>
-          <h2 className='text-white md:text-5xl font-lexend mb-8 md:p-0 px-6 text-4xl'>Frequently Asked Questions</h2>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-            <div className='bg-black/25 backdrop-blur-xl rounded-lg p-6'>
-              <h3 className='text-white text-2xl font-lexend mb-4'>Where are you located?</h3>
-              <p className='text-white/50 text-lg font-lexend'>We are at 3116 Ash Avenue McAllen Texas 78501. It&apos;s by business 83 between Ware and 29th.</p>
-            </div>
-            <div className='bg-black/25 backdrop-blur-xl rounded-lg p-6'>
-              <h3 className='text-white text-2xl font-lexend mb-4'>What is the price per vehicle?</h3>
-              <p className='text-white/50 text-lg font-lexend'>The price is $20 per vehicle, we have discount Tuesday for $10 per vehicle.</p>
-            </div>
-            <div className='bg-black/25 backdrop-blur-xl rounded-lg p-6'>
-              <h3 className='text-white text-2xl font-lexend mb-4'>Can we bring our own snacks?</h3>
-              <p className='text-white/50 text-lg font-lexend'>We have concessions but you are welcome to bring your favorites.</p>
-            </div>
-            <div className='bg-black/25 backdrop-blur-xl rounded-lg p-6'>
-              <h3 className='text-white text-2xl font-lexend mb-4'>What time and days do you open?</h3>
-              <p className='text-white/50 text-lg font-lexend'>We are open everyday at 6:15pm, show starts at 7:00pm.</p>
-            </div>
-            <div className='bg-black/25 backdrop-blur-xl rounded-lg p-6'>
-              <h3 className='text-white text-2xl font-lexend mb-4'>Can we bring our pets?</h3>
-              <p className='text-white/50 text-lg font-lexend'>Unfortunately pets are not allowed.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <footer
-        ref={footerRef}
-        className='bg-black py-8 relative overflow-hidden'
-      >
-        <div className='max-w-4xl mx-auto relative z-10 flex flex-col md:flex-row justify-between items-center gap-2 md:gap-0'>
-          <p className='text-white/50 text-lg font-lexend text-center md:text-left'>&copy; 2024 Valley&apos;s Drive In Theater - All Rights Reserved.</p>
-          <div className='flex space-x-4 items-center'>
-            <div className='flex space-x-4 mr-4'>
-              <Link href='/' className='text-white/50 hover:text-white'>Home</Link>
-              <Link href='/#faq' className='text-white/50 hover:text-white'>FAQ</Link>
-              <Link href='/#tickets' className='text-white/50 hover:text-white'>Buy Your Tickets</Link>
-            </div>
-            <div className='flex space-x-4'>
-              <Link
-                href='https://www.instagram.com/valleysdriveintheater/'
-                target="_blank"
-                rel="noopener noreferrer"
-                className='text-white/50 hover:text-white'
-              >
-                <Instagram size={24} />
-              </Link>
-              <Link
-                href='https://www.facebook.com/profile.php?id=100086438355565'
-                target="_blank"
-                rel="noopener noreferrer"
-                className='text-white/50 hover:text-white'
-              >
-                <Facebook size={24} />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+        <Footer />
+      </div>
     </main>
   );
 }

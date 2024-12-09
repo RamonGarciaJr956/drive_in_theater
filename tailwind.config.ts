@@ -6,9 +6,9 @@ export default {
   theme: {
     extend: {
       keyframes: {
-        twinkle: {
-          '0%, 100%': { opacity: '0' },
-          '50%': { opacity: '1' },
+        sparkle: {
+          '0%, 100%': { opacity: '0.5', transform: 'scale(0.8)' },
+          '50%': { opacity: '1', transform: 'scale(1)' },
         },
         videoRevealTop: {
           '0%': {
@@ -30,7 +30,7 @@ export default {
         }
       },
       animation: {
-        'twinkle': 'twinkle 2s infinite',
+        'sparkle': 'sparkle 1s ease-out infinite',
         'video-reveal-top': 'videoRevealTop 2s ease-out forwards',
         'video-reveal-bottom': 'videoRevealBottom 2s ease-out forwards'
       },
