@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import PaymentMethodsSection from './PaymentMethodsSection';
 import ProfileEditSection from './ProfileEditSection';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
