@@ -115,9 +115,11 @@ export const authConfig = {
     session: ({ session, user }) => ({
       ...session,
       user: {
-        ...session.user,
         id: user.id,
-      },
+        name: user.name,
+        email: user.email,
+        image: user.image,
+      }
     }),
   },
   jwt: {
@@ -141,6 +143,11 @@ export const authConfig = {
   },
   session: {
     maxAge: 1 * 24 * 60 * 60,
+  },
+  pages: {
+    signIn: "/signin",
+    error: "/signin",
+    verifyRequest: "/auth/verify-request"
   },
   secret: process.env.AUTH_SECRET!,
 } satisfies NextAuthConfig;

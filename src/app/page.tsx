@@ -5,50 +5,19 @@ import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import type { Star } from '../types';
+import type { ShowingsResponse } from '../types';
+import type { ShowingWithMovie } from '../types';
 
 export default function HomePage() {
   const discountDay = useMemo(() => new Date().getDay() === 2, []);
   const discountAmount = useMemo(() => discountDay ? 0.5 : 1, [discountDay]);
 
-  const movies = useMemo(() => [
-    {
-      id: 1,
-      MovieName: 'Moana 2',
-      MovieImage: '/moana 2.webp',
-      MovieDescription: 'Playing 6/12 @ 6:15pm',
-      MovieDuration: 100,
-      MovieStartTime: 1733533200,
-      MovieStarring: ['Dwayne Johnson', 'Nicole Scherzinger', 'Alan Tudyk', 'Rose Matafeo'],
-      MovieVideo: '/Moana 2.mp4',
-      MoviePricePerCar: 20,
-      MoviePricePerPerson: null
-    },
-    {
-      id: 2223,
-      MovieName: 'Gladiator 2',
-      MovieImage: '/gladiator 2.jpeg',
-      MovieDescription: 'Playing 6/12 @ 6:15pm',
-      MovieDuration: 148,
-      MovieStartTime: 1733541000,
-      MovieStarring: ['Dwayne Johnson', 'Nicole Scherzinger', 'Alan Tudyk', 'Rose Matafeo'],
-      MovieVideo: '/Gladiator 2.mp4',
-      MoviePricePerCar: 20,
-      MoviePricePerPerson: null
-    }
-  ], []);
-
-  interface Star {
-    id: number;
-    top: string;
-    left: string;
-    scale: number;
-    duration: string;
-    delay: string;
-  }
-
-  const [selectedMovie, setSelectedMovie] = useState(movies[0]);
+  const [movies, setMovies] = useState<ShowingWithMovie[]>([]);
+  const [selectedMovie, setSelectedMovie] = useState<ShowingWithMovie | null>(null);
   const [selectedMovieIndex, setSelectedMovieIndex] = useState(0);
   const [stars, setStars] = useState<Star[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const starArray = Array.from({ length: 200 }).map((_, index) => ({
@@ -60,43 +29,77 @@ export default function HomePage() {
       delay: `${Math.random()}s`,
     }));
 
+    const getShowing = async () => {
+      try {
+        const response = await fetch('/api/showings');
+        const data = await response.json() as ShowingsResponse;
+        setMovies(data.movies);
+        setSelectedMovie(data.movies[0] ?? null);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching showings:', error);
+        setIsLoading(false);
+      }
+    }
+
+    void getShowing();
     setStars(starArray);
   }, []);
 
   useEffect(() => {
-    setSelectedMovie(movies[selectedMovieIndex]);
+    if (movies.length > 0) {
+      setSelectedMovie(movies[selectedMovieIndex] ?? null);
+    }
   }, [selectedMovieIndex, movies]);
 
   function minutesToHoursMinutes(totalMinutes: number) {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
-    return `${hours}:${minutes}`;
+    return `${hours}:${minutes.toString().padStart(2, '0')}`;
   }
 
-  function epochToTimeAMPM(epoch: number) {
-    const date = new Date(epoch * 1000);
+  if (isLoading) {
+    return (
+      <main className='max-w-screen h-screen overflow-hidden flex flex-col bg-black justify-center items-center relative'>
+        <div className='absolute w-full h-full z-10'>
+          {stars.map((star) => (
+            <div
+              key={star.id}
+              className="absolute w-1 h-1 bg-white/50 rounded-full animate-sparkle"
+              style={{
+                top: star.top,
+                left: star.left,
+                scale: star.scale,
+                animationDuration: star.duration,
+                animationDelay: star.delay,
+              }}
+            />
+          ))}
+        </div>
+        <div className='text-white text-3xl font-lexend animate-pulse'>
+          Fetching Movies...
+        </div>
+      </main>
+    );
+  }
 
-    let hours = date.getHours();
-    const minutes = date.getMinutes();
-
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-
-    hours = hours % 12 || 12;
-
-    const formattedMinutes = minutes.toString().padStart(2, '0');
-
-    return `${hours}:${formattedMinutes} ${ampm}`;
+  if (!selectedMovie) {
+    return (
+      <main className='max-w-screen h-screen overflow-hidden flex flex-col bg-black justify-center items-center'>
+        <div className='text-white text-3xl font-lexend'>No movies available</div>
+      </main>
+    );
   }
 
   return (
     <main className='max-w-screen overflow-hidden flex flex-col bg-black'>
 
       <section className="w-screen h-screen max-w-screen max-h-screen flex flex-col md:flex-row overflow-hidden relative z-20">
-        <div key={selectedMovie!.MovieVideo} className="absolute top-0 left-0 w-full h-full overflow-hidden">
+        <div key={selectedMovie?.movie.video} className="absolute top-0 left-0 w-full h-full overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1/2 bg-black origin-top animate-video-reveal-top z-10" />
           <div className="absolute bottom-0 left-0 w-full h-1/2 bg-black origin-top animate-video-reveal-bottom z-10" />
           <video
-            key={selectedMovie!.MovieVideo}
+            key={selectedMovie?.movie.video}
             className="absolute top-0 left-0 w-full h-full object-cover"
             autoPlay
             loop
@@ -104,7 +107,7 @@ export default function HomePage() {
             playsInline
             disablePictureInPicture
           >
-            <source src={selectedMovie!.MovieVideo} type="video/mp4" />
+            <source src={selectedMovie?.movie.video} type="video/mp4" />
           </video>
         </div>
 
@@ -115,10 +118,10 @@ export default function HomePage() {
             <div className='flex flex-col justify-between pb-10 md:pb-20 pt-4 px-4 md:pl-20 text-center md:text-left'>
               <div>
                 <h1 className='text-4xl md:text-8xl text-white uppercase font-lexend underline max-w-full md:max-w-[50vw]'>
-                  {selectedMovie?.MovieName}
+                  {selectedMovie?.movie.name}
                 </h1>
                 <p className='text-white text-base md:text-xl font-extralight font-lexend p-2'>
-                  {selectedMovie?.MovieDescription}
+                  {selectedMovie?.movie.description}
                 </p>
               </div>
             </div>
@@ -127,7 +130,7 @@ export default function HomePage() {
               <div className='hidden md:block'>
                 <h2 className='text-white font-lexend text-xl py-2 font-semibold'>Starring</h2>
                 {
-                  selectedMovie?.MovieStarring.map((actor, index) => (
+                  selectedMovie?.movie.starring.cast.map((actor, index) => (
                     <p key={actor}
                       style={{
                         opacity: 1 - index * 0.2
@@ -155,7 +158,7 @@ export default function HomePage() {
                   <div className='hidden md:flex flex-row gap-2'>
                     {
                       movies.map((movie) => (
-                        <div key={movie.id} data-selected={movie.id == selectedMovie!.id} className='data-[selected=true]:bg-white bg-white/50 w-1 h-1 rounded-full' />
+                        <div key={movie.movie.id} data-selected={movie.movie.id == selectedMovie?.movie.id} className='data-[selected=true]:bg-white bg-white/50 w-1 h-1 rounded-full' />
                       ))
                     }
                   </div>
@@ -164,10 +167,10 @@ export default function HomePage() {
                 <div className='flex flex-row gap-4 justify-center'>
                   {
                     movies.map((movie) => (
-                      <button key={movie.id} onClick={() => {
-                        setSelectedMovieIndex(movies.findIndex(m => m.id === movie.id));
+                      <button key={movie.movie.id} onClick={() => {
+                        setSelectedMovieIndex(movies.findIndex(m => m.movie.id === movie.movie.id));
                       }}>
-                        <Image className='rounded-sm w-[125px] md:w-[175px]' src={movie.MovieImage} alt={movie.MovieName} width={175} height={175} />
+                        <Image className='rounded-sm w-[125px] md:w-[175px]' src={movie.movie.image} alt={movie.movie.name} width={175} height={175} />
                       </button>
                     ))
                   }
@@ -220,32 +223,32 @@ export default function HomePage() {
             <div className='flex flex-col md:flex-row gap-8'>
               {movies.map((movie) => (
                 <div
-                  key={movie.id}
+                  key={movie.movie.id}
                   className='bg-white/5 border border-white/10 flex-1 rounded-xl overflow-hidden transition-all duration-300 hover:border-white/20 hover:shadow-xl'
                 >
                   <div className='relative w-full aspect-[3/4] overflow-hidden'>
                     <Image
-                      src={movie.MovieImage}
-                      alt={movie.MovieName}
+                      src={movie.movie.image}
+                      alt={movie.movie.name}
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className='object-cover transition-transform duration-300 group-hover:scale-105'
                     />
                   </div>
                   <div className='p-6'>
-                    <h3 className='text-2xl font-lexend text-white font-semibold mb-3'>{movie.MovieName}</h3>
+                    <h3 className='text-2xl font-lexend text-white font-semibold mb-3'>{movie.movie.name}</h3>
                     <div className='mb-4 space-y-2'>
                       <p className='text-white/70 flex items-center gap-2'>
                         <Clock />
-                        Playing @ {epochToTimeAMPM(movie.MovieStartTime)}
+                        Playing @ {new Date(movie.showing.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                       <p className='text-white/70 flex items-center gap-2'>
                         <Timer />
-                        Duration {minutesToHoursMinutes(movie.MovieDuration)} minutes
+                        Duration {minutesToHoursMinutes(movie.movie.duration)} minutes
                       </p>
                       <p className='text-white/70 flex items-center gap-2'>
                         <Banknote />
-                        {discountDay ? `Discount Tuesday $${movie.MoviePricePerCar * discountAmount} per vehicle` : `$${movie.MoviePricePerCar} per vehicle`}
+                        {discountDay ? `Discount Tuesday $${Number(movie.movie.price) * discountAmount} per vehicle` : `$${movie.movie.price} per vehicle`}
                       </p>
                     </div>
                     <button className='w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg'>

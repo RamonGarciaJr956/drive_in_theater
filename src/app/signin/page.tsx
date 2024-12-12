@@ -1,27 +1,20 @@
 "use client";
 
-import { User, Lock } from 'lucide-react'
+import { User, Lock, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { signIn } from 'next-auth/react'
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import type { Star } from '../../types';
+import { useRouter } from 'next/navigation';
 
 export default function Signin() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  
-  interface Star {
-    id: number;
-    top: string;
-    left: string;
-    scale: number;
-    duration: string;
-    delay: string;
-  }
-
+  const router = useRouter();
   const [stars, setStars] = useState<Star[]>([]);
 
   useEffect(() => {
@@ -39,6 +32,7 @@ export default function Signin() {
 
   const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
+
     setError('');
 
     try {
@@ -46,13 +40,26 @@ export default function Signin() {
         email: email,
         password: password,
         redirect: false,
+        callbackUrl: '/dashboard'
       });
 
       if (result?.error) {
-        setError("Invalid Credentials Provided");
+        switch (result.error) {
+          case 'CredentialsSignin':
+            setError('Invalid email or password. Please try again.');
+            break;
+          case 'UserNotFound':
+            setError('No account found with this email.');
+            break;
+          default:
+            setError('An unexpected error occurred. Please try again.');
+        }
+      } else if (result?.url) {
+        router.push('/dashboard');
       }
     } catch (error) {
-      setError("An unexpected error occurred. Please try again.");
+      setError('An unexpected error occurred. Please contact support.');
+      console.error('Login error:', error);
     }
   };
 
@@ -80,9 +87,16 @@ export default function Signin() {
 
         <div className='flex-1 flex justify-center items-center'>
           <div className='w-full max-w-md bg-white/5 border border-white/10 rounded-xl p-8 backdrop-blur-sm m-8'>
-            <h1 className='text-4xl font-lexend text-white text-center mb-8 uppercase'>
+            <h1 className='text-4xl font-lexend text-white text-center mb-2 uppercase'>
               Login
             </h1>
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-500 p-4 rounded-lg mb-4 flex items-center">
+                <AlertCircle className="mr-2 shrink-0" size={20} />
+                <span className="text-sm">{error}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSignIn} className='space-y-6'>
               <div className='relative'>
@@ -128,7 +142,7 @@ export default function Signin() {
 
               <button
                 type="button"
-                onClick={() => signIn('google')}
+                onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
                 className='w-full flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg'
               >
                 Continue with Google

@@ -2,54 +2,30 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import type { Star } from '../../types';
 import {
     TicketIcon,
     UserIcon,
     CalendarIcon,
-    ChevronRightIcon,
-    Loader2
+    ChevronRightIcon
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import ProfileEditSection from './ProfileEditSection';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-
-const mockTickets = [
-    {
-        id: 'MOANA2-001',
-        movieName: 'Moana 2',
-        movieImage: '/moana 2.webp',
-        date: 'June 12, 2024',
-        time: '6:15 PM',
-        price: 20,
-        qrCode: '/ticket-qr-placeholder.png'
-    },
-    {
-        id: 'GLAD2-002',
-        movieName: 'Gladiator 2',
-        movieImage: '/gladiator 2.jpeg',
-        date: 'July 5, 2024',
-        time: '6:15 PM',
-        price: 20,
-        qrCode: '/ticket-qr-placeholder.png'
-    }
-];
-
-interface Star {
-    id: number;
-    top: string;
-    left: string;
-    scale: number;
-    duration: string;
-    delay: string;
-}
+import ProfileSection from './ProfileSection';
+import Loading from '~/app/components/Loading';
+import type { TicketsResponse } from '~/types';
+import type { TicketWithShowingAndMovie } from '~/types';
 
 export default function UserDashboard() {
     const [activeTab, setActiveTab] = useState('tickets');
     const { status } = useSession();
     const router = useRouter();
     const [stars, setStars] = useState<Star[]>([]);
+    const [tickets, setTickets] = useState<TicketWithShowingAndMovie[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const starArray = Array.from({ length: 200 }).map((_, index) => ({
@@ -61,9 +37,20 @@ export default function UserDashboard() {
             delay: `${Math.random()}s`,
         }));
 
+        const getTickets = async () => {
+            const response = await fetch('/api/tickets');
+            const data = await response.json() as TicketsResponse;
+            setTickets(data.tickets);
+            setIsLoading(false);
+        }
+
+        getTickets().catch((error) => {
+            console.error('Error fetching tickets:', error);
+            setIsLoading(false);
+        });
         setStars(starArray);
     }, []);
-    
+
     useEffect(() => {
         if (status === 'unauthenticated') {
             router.push('/signin')
@@ -72,10 +59,14 @@ export default function UserDashboard() {
 
     if (status === 'loading' || status === 'unauthenticated') {
         return (
-            <main className='max-w-screen min-h-screen overflow-hidden flex flex-col bg-black relative justify-between'>
-                <Navbar />
+            <Loading stars={stars} />
+        );
+    }
 
-                <div className="absolute w-full h-full">
+    if (isLoading) {
+        return (
+            <main className='max-w-screen h-screen overflow-hidden flex flex-col bg-black justify-center items-center relative'>
+                <div className='absolute w-full h-full z-10'>
                     {stars.map((star) => (
                         <div
                             key={star.id}
@@ -90,13 +81,9 @@ export default function UserDashboard() {
                         />
                     ))}
                 </div>
-
-                <div className='flex flex-col justify-center items-center gap-2'>
-                    <Loader2 className='w-16 h-16 text-white animate-spin' />
-                    <h3 className='text-white text-xl'>Loading...</h3>
+                <div className='text-white text-3xl font-lexend animate-pulse'>
+                    Fetching Tickets...
                 </div>
-
-                <Footer />
             </main>
         );
     }
@@ -151,57 +138,68 @@ export default function UserDashboard() {
                         </div>
 
                         <div>
-                            {activeTab === 'tickets' && (
-                                <div>
-                                    <h1 className='text-4xl text-white font-lexend font-bold mb-8'>
-                                        My Tickets
-                                    </h1>
+                            <AnimatePresence mode="wait">
+                                {activeTab === 'tickets' && (
+                                    <motion.div
+                                        key="tickets"
+                                        initial={{ opacity: 0, x: 50 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -50 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <h1 className='text-4xl text-white font-lexend font-bold mb-8'>
+                                            My Tickets
+                                        </h1>
 
-                                    <div className='space-y-6'>
-                                        {mockTickets.map((ticket) => (
-                                            <div
-                                                key={ticket.id}
-                                                className='bg-white/5 border border-white/10 rounded-xl overflow-hidden flex items-center gap-6 p-6 hover:border-white/20 transition-all'
-                                            >
-                                                <Image
-                                                    src={ticket.movieImage}
-                                                    alt="Ticket QR Code"
-                                                    width={100}
-                                                    height={100}
-                                                    className='rounded-lg'
-                                                />
-                                                <div className='flex-1'>
-                                                    <h3 className='text-2xl text-white font-lexend'>
-                                                        {ticket.movieName}
-                                                    </h3>
-                                                    <div className='text-white/70 space-y-1'>
-                                                        <p className='flex items-center gap-2'>
-                                                            <CalendarIcon size={16} />
-                                                            {ticket.date} at {ticket.time}
+                                        <div className='space-y-6'>
+                                            {tickets.map((ticket) => (
+                                                <div
+                                                    key={ticket.ticket.id}
+                                                    className='bg-white/5 border border-white/10 rounded-xl md:justify-between overflow-hidden flex md:items-center md:flex-row flex-col gap-6 p-6 hover:border-white/20 transition-all'
+                                                >
+                                                    <div className='flex flex-row gap-4'>
+                                                        <Image
+                                                            src={ticket.movie.image}
+                                                            alt="Ticket QR Code"
+                                                            width={100}
+                                                            height={100}
+                                                            className='rounded-lg'
+                                                        />
+                                                        <div className='flex-1'>
+                                                            <h3 className='text-2xl text-white font-lexend'>
+                                                                {ticket.movie.name}
+                                                            </h3>
+                                                            <div className='text-white/70 space-y-1'>
+                                                                <p className='flex items-center gap-2'>
+                                                                    <CalendarIcon size={16} />
+                                                                    {new Date(ticket.showing.start_time).toLocaleString()}
+                                                                </p>
+                                                                <p>Ticket ID: {ticket.ticket.id}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className='md:text-right text-left'>
+                                                        <p className='text-2xl text-white font-lexend'>
+                                                            ${ticket.movie.price}
                                                         </p>
-                                                        <p>Ticket ID: {ticket.id}</p>
+                                                        <Link
+                                                            href={`/ticket/${ticket.ticket.id}`}
+                                                            className='text-white/70 hover:text-white flex items-center gap-1'
+                                                        >
+                                                            Details <ChevronRightIcon size={16} />
+                                                        </Link>
                                                     </div>
                                                 </div>
-                                                <div className='text-right'>
-                                                    <p className='text-2xl text-white font-lexend'>
-                                                        ${ticket.price}
-                                                    </p>
-                                                    <Link
-                                                        href={`/order/${ticket.id}`}
-                                                        className='text-white/70 hover:text-white flex items-center gap-1'
-                                                    >
-                                                        Details <ChevronRightIcon size={16} />
-                                                    </Link>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
 
-                            {activeTab === 'profile' && (
-                                <ProfileEditSection />
-                            )}
+                                {activeTab === 'profile' && (
+                                    <ProfileSection />
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </div>

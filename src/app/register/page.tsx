@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { signIn } from 'next-auth/react'
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import type { Star } from '../../types';
 
 export default function Register() {
   const [name, setName] = useState('')
@@ -13,15 +14,6 @@ export default function Register() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
-
-  interface Star {
-    id: number;
-    top: string;
-    left: string;
-    scale: number;
-    duration: string;
-    delay: string;
-  }
 
   const [stars, setStars] = useState<Star[]>([]);
 

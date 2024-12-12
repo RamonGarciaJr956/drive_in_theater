@@ -2,13 +2,13 @@
 import { X } from 'lucide-react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-
-interface MobileMenuProps {
-  isOpen: boolean;
-  toggleMenuAction: () => void;
-}
+import { signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import type { MobileMenuProps } from '../../types';
 
 export default function MobileMenu({ isOpen, toggleMenuAction }: MobileMenuProps) {
+  const { status } = useSession();
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -70,23 +70,57 @@ export default function MobileMenu({ isOpen, toggleMenuAction }: MobileMenuProps
                 </Link>
               </motion.li>
 
-              <motion.li
-                initial={{ x: -50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.4, ease: "easeOut" }}
-                className='flex justify-center'
-              >
-                <Link
-                  href={'/signin'}
-                  onClick={toggleMenuAction}
-                  className="text-white text-3xl font-lexend font-light py-2 block transition-all duration-300 hover:text-white/70"
-                >
-                  Login
-                </Link>
-              </motion.li>
+              {
+                status === 'authenticated' ? (
+                  <>
+                    <motion.li
+                      initial={{ x: -50, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.3, duration: 0.4, ease: "easeOut" }}
+                      className='flex justify-center'
+                    >
+                      <Link
+                        href={'/dashboard'}
+                        onClick={toggleMenuAction}
+                        className="text-white text-3xl font-lexend font-light py-2 block transition-all duration-300 hover:text-white/70"
+                      >
+                        Dashboard
+                      </Link>
+                    </motion.li>
+                    <motion.li
+                      initial={{ x: -50, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.3, duration: 0.4, ease: "easeOut" }}
+                      className='flex justify-center'
+                    >
+                      <Link
+                        href={'/dashboard'}
+                        onClick={() => signOut()}
+                        className="text-white text-3xl font-lexend font-light py-2 block transition-all duration-300 hover:text-white/70"
+                      >
+                        Sign Out
+                      </Link>
+                    </motion.li>
+                  </>
+                ) : (
+                  <motion.li
+                    initial={{ x: -50, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.3, duration: 0.4, ease: "easeOut" }}
+                    className='flex justify-center'
+                  >
+                    <Link
+                      href={'/signin'}
+                      onClick={toggleMenuAction}
+                      className="text-white text-3xl font-lexend font-light py-2 block transition-all duration-300 hover:text-white/70"
+                    >
+                      Login
+                    </Link>
+                  </motion.li>
+                )
+              }
             </ul>
 
-            {/* Close button */}
             <motion.button
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}

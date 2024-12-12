@@ -7,6 +7,9 @@ import {
   text,
   timestamp,
   varchar,
+  numeric,
+  jsonb,
+  boolean
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 
@@ -32,10 +35,6 @@ export const users = createTable("user", {
   image: varchar("image", { length: 255 }),
   password: text("password")
 });
-
-export const usersRelations = relations(users, ({ many }) => ({
-  accounts: many(accounts),
-}));
 
 export const accounts = createTable(
   "account",
@@ -107,3 +106,104 @@ export const verificationTokens = createTable(
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
   })
 );
+
+//----------------------------------------
+
+export const movies = createTable("movie", {
+  id: varchar("id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  duration: integer("duration"),
+  genre: varchar("genre", { length: 255 }),
+  starring: jsonb("starring"),
+  image: varchar("image", { length: 255 }),
+  video: varchar("video", { length: 255 }),
+  price: numeric("price", { precision: 10, scale: 2 })
+});
+
+export const showings = createTable("showing", {
+  id: varchar("id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  movie_id: varchar("movie_id", { length: 255 })
+    .notNull()
+    .references(() => movies.id),
+  start_time: timestamp("start_time", {
+    mode: "date",
+    withTimezone: true
+  }).notNull(),
+  location: varchar("location", { length: 255 }),
+  spaces_available: integer("spaces_available").default(0),
+  is_active: boolean("is_active").default(true)
+});
+
+export const tickets = createTable("ticket", {
+  id: varchar("id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  showing_id: varchar("showing_id", { length: 255 })
+    .notNull()
+    .references(() => showings.id),
+  user_id: varchar("user_id", { length: 255 })
+    .notNull()
+    .references(() => users.id),
+  purchase_timestamp: timestamp("purchase_timestamp", {
+    mode: "date",
+    withTimezone: true
+  }).default(sql`CURRENT_TIMESTAMP`)
+});
+
+export const loyalty_points = createTable("loyalty_point", {
+  user_id: varchar("user_id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .references(() => users.id),
+  total_points: integer("total_points").default(0),
+  tier_name: varchar("tier_name", { length: 100 }),
+  next_tier_points: integer("next_tier_points"),
+  tier_progress_percentage: integer("tier_progress_percentage").default(0)
+});
+
+//----------------------------------------
+
+export const usersRelations = relations(users, ({ many, one }) => ({
+  accounts: many(accounts),
+  sessions: many(sessions),
+  tickets: many(tickets),
+  loyalty_points: one(loyalty_points)
+}));
+
+export const moviesRelations = relations(movies, ({ many }) => ({
+  showings: many(showings)
+}));
+
+export const showingsRelations = relations(showings, ({ one, many }) => ({
+  movie: one(movies, {
+    fields: [showings.movie_id],
+    references: [movies.id]
+  }),
+  tickets: many(tickets)
+}));
+
+export const ticketsRelations = relations(tickets, ({ one }) => ({
+  showing: one(showings, {
+    fields: [tickets.showing_id],
+    references: [showings.id]
+  }),
+  user: one(users, {
+    fields: [tickets.user_id],
+    references: [users.id]
+  })
+}));
+
+export const loyaltyPointsRelations = relations(loyalty_points, ({ one }) => ({
+  user: one(users, {
+    fields: [loyalty_points.user_id],
+    references: [users.id]
+  })
+}));
