@@ -34,7 +34,6 @@ export default function Navbar() {
             <ul className='hidden md:flex flex-row h-fit gap-6 font-lexend font-light items-center'>
                 <li><Link href={'/'} className="text-white text-lg py-2 px-5 rounded-full hover:backdrop-blur-xl hover:bg-white/25">Home</Link></li>
                 <li><Link href={'/#faq'} className="text-white text-lg py-2 px-5 rounded-full hover:backdrop-blur-xl hover:bg-white/25">FAQ</Link></li>
-                <li><Link href={'/#tickets'} className="text-white text-lg py-3 px-5 rounded-sm backdrop-blur-xl bg-white/25 hover:bg-white/50">Buy Your Tickets</Link></li>
                 {
                     status === 'authenticated' ? (
                         <>

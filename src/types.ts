@@ -50,7 +50,7 @@ export type MovieDetails = {
     starring: StarringCast;
     image: string;
     video: string;
-    price: string;
+    price: number;
 };
 
 export type TicketWithShowingAndMovie = {

@@ -54,25 +54,11 @@ export default function MobileMenu({ isOpen, toggleMenuAction }: MobileMenuProps
                 </Link>
               </motion.li>
 
-              <hr className='w-[90%] mx-auto border-white/50 border-1' />
-
-              <motion.li
-                initial={{ x: -50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.4, ease: "easeOut" }}
-              >
-                <Link
-                  href={'/#tickets'}
-                  onClick={toggleMenuAction}
-                  className="text-white text-3xl font-lexend font-light py-2 block transition-all duration-300 hover:text-white/70"
-                >
-                  Buy Your Tickets
-                </Link>
-              </motion.li>
-
               {
                 status === 'authenticated' ? (
                   <>
+                    <hr className='w-[90%] mx-auto border-white/50 border-1' />
+
                     <motion.li
                       initial={{ x: -50, opacity: 0 }}
                       animate={{ x: 0, opacity: 1 }}

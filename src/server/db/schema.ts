@@ -33,7 +33,8 @@ export const users = createTable("user", {
     withTimezone: true,
   }).default(sql`CURRENT_TIMESTAMP`),
   image: varchar("image", { length: 255 }),
-  password: text("password")
+  password: text("password"),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 })
 });
 
 export const accounts = createTable(

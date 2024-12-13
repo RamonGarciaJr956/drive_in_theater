@@ -1,18 +1,18 @@
 "use client";
 import Image from 'next/image';
-import { Banknote, ChevronLeft, ChevronRight, Clock, Timer } from 'lucide-react';
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { Banknote, ChevronLeft, ChevronRight, Clock, LoaderCircle, Timer } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import type { Star } from '../types';
 import type { ShowingsResponse } from '../types';
 import type { ShowingWithMovie } from '../types';
+import { discountDay, discountPercentage } from './config';
+import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
-  const discountDay = useMemo(() => new Date().getDay() === 2, []);
-  const discountAmount = useMemo(() => discountDay ? 0.5 : 1, [discountDay]);
-
+  const router = useRouter();
   const [movies, setMovies] = useState<ShowingWithMovie[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<ShowingWithMovie | null>(null);
   const [selectedMovieIndex, setSelectedMovieIndex] = useState(0);
@@ -21,6 +21,9 @@ export default function HomePage() {
   const [videoLoaded, setVideoLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutShowing, setCheckoutShowing] = useState('');
+  const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   useEffect(() => {
     const starArray = Array.from({ length: 200 }).map((_, index) => ({
@@ -80,6 +83,30 @@ export default function HomePage() {
     return `${hours}:${minutes.toString().padStart(2, '0')}`;
   }
 
+  function buyTicket(showingId: string) {
+    setCheckoutLoading(true);
+
+    fetch('/api/buy-ticket', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ showingId }),
+    }).then((response) => {
+      if (response.ok) {
+        response.json().then((data: { checkoutSessionUrl: string }) => {
+          router.push(data.checkoutSessionUrl);
+        }).catch((error) => {
+          console.error('Error parsing response:', error);
+        });
+      } else {
+        console.error('Error purchasing ticket:', response.statusText);
+      }
+    }).catch((error) => {
+      console.error('Error purchasing ticket:', error);
+    });
+  }
+
   if (isLoading || !videoLoaded) {
     return (
       <main className='max-w-screen h-screen overflow-hidden flex flex-col bg-black justify-center items-center relative'>
@@ -102,15 +129,15 @@ export default function HomePage() {
           {isLoading ? 'Loading...' : 'Loading video...'}
         </div>
         <video
-            ref={videoRef}
-            key={selectedMovie?.movie.video}
-            className="hidden"
-            onCanPlay={() => setVideoLoaded(true)}
-            autoPlay
-            loop
-            muted
-            playsInline
-            disablePictureInPicture
+          ref={videoRef}
+          key={selectedMovie?.movie.video}
+          className="hidden"
+          onCanPlay={() => setVideoLoaded(true)}
+          autoPlay
+          loop
+          muted
+          playsInline
+          disablePictureInPicture
         >
           <source src={selectedMovie?.movie.video} type="video/mp4" />
         </video>
@@ -290,15 +317,15 @@ export default function HomePage() {
                       </p>
                       <p className='text-white/70 flex items-center gap-2'>
                         <Timer />
-                        Duration {minutesToHoursMinutes(movie.movie.duration)} minutes
+                        Duration {minutesToHoursMinutes(movie.movie.duration)} hours
                       </p>
                       <p className='text-white/70 flex items-center gap-2'>
                         <Banknote />
-                        {discountDay ? `Discount Tuesday $${Number(movie.movie.price) * discountAmount} per vehicle` : `$${movie.movie.price} per vehicle`}
+                        {(new Date().getDay() === discountDay) ? `Discount ${weekDays[discountDay]} $${Number(movie.movie.price) * (discountPercentage / 100)} per vehicle` : `$${movie.movie.price} per vehicle`}
                       </p>
                     </div>
-                    <button className='w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg'>
-                      Get Your Tickets
+                    <button disabled={checkoutLoading} onClick={() => { setCheckoutShowing(movie.showing.id); buyTicket(movie.showing.id) }} className='w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg flex items-center justify-center'>
+                      {checkoutLoading && checkoutShowing == movie.showing.id ? <LoaderCircle className='animate-spin' /> : <p>Buy Your Tickets</p>}
                     </button>
                   </div>
                 </div>
