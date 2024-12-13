@@ -147,6 +147,7 @@ export const authConfig = {
   pages: {
     signIn: "/signin",
     error: "/signin",
+    signOut: "/",
     verifyRequest: "/auth/verify-request"
   },
   secret: process.env.AUTH_SECRET!,
