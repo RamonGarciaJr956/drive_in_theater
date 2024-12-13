@@ -1,7 +1,7 @@
 "use client";
 import Image from 'next/image';
 import { Banknote, ChevronLeft, ChevronRight, Clock, Timer } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -18,6 +18,9 @@ export default function HomePage() {
   const [selectedMovieIndex, setSelectedMovieIndex] = useState(0);
   const [stars, setStars] = useState<Star[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
 
   useEffect(() => {
     const starArray = Array.from({ length: 200 }).map((_, index) => ({
@@ -49,6 +52,25 @@ export default function HomePage() {
   useEffect(() => {
     if (movies.length > 0) {
       setSelectedMovie(movies[selectedMovieIndex] ?? null);
+
+      Object.values(videoRefs.current).forEach(video => {
+        if (video) {
+          video.pause();
+          video.currentTime = 0;
+        }
+      });
+
+      const selectedVideo = videoRefs.current[movies[selectedMovieIndex]?.movie.id ?? ''];
+
+      if (selectedVideo) {
+        try {
+          void selectedVideo.play().catch((error) => {
+            console.error('Error playing video:', error);
+          });
+        } catch (error) {
+          console.error('Unexpected error playing video:', error);
+        }
+      }
     }
   }, [selectedMovieIndex, movies]);
 
@@ -58,7 +80,7 @@ export default function HomePage() {
     return `${hours}:${minutes.toString().padStart(2, '0')}`;
   }
 
-  if (isLoading) {
+  if (isLoading || !videoLoaded) {
     return (
       <main className='max-w-screen h-screen overflow-hidden flex flex-col bg-black justify-center items-center relative'>
         <div className='absolute w-full h-full z-10'>
@@ -77,8 +99,21 @@ export default function HomePage() {
           ))}
         </div>
         <div className='text-white text-3xl font-lexend animate-pulse'>
-          Fetching Movies...
+          {isLoading ? 'Loading...' : 'Loading video...'}
         </div>
+        <video
+            ref={videoRef}
+            key={selectedMovie?.movie.video}
+            className="hidden"
+            onCanPlay={() => setVideoLoaded(true)}
+            autoPlay
+            loop
+            muted
+            playsInline
+            disablePictureInPicture
+        >
+          <source src={selectedMovie?.movie.video} type="video/mp4" />
+        </video>
       </main>
     );
   }
@@ -93,22 +128,32 @@ export default function HomePage() {
 
   return (
     <main className='max-w-screen overflow-hidden flex flex-col bg-black'>
-
       <section className="w-screen h-screen max-w-screen max-h-screen flex flex-col md:flex-row overflow-hidden relative z-20">
-        <div key={selectedMovie?.movie.video} className="absolute top-0 left-0 w-full h-full overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1/2 bg-black origin-top animate-video-reveal-top z-10" />
-          <div className="absolute bottom-0 left-0 w-full h-1/2 bg-black origin-top animate-video-reveal-bottom z-10" />
-          <video
-            key={selectedMovie?.movie.video}
-            className="absolute top-0 left-0 w-full h-full object-cover"
-            autoPlay
-            loop
-            muted
-            playsInline
-            disablePictureInPicture
-          >
-            <source src={selectedMovie?.movie.video} type="video/mp4" />
-          </video>
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
+          <div key={`top-reveal-${selectedMovie?.movie.id}`} className="absolute top-0 left-0 w-full h-1/2 bg-black origin-top animate-video-reveal-top z-10" />
+          <div key={`bottom-reveal-${selectedMovie?.movie.id}`} className="absolute bottom-0 left-0 w-full h-1/2 bg-black origin-top animate-video-reveal-bottom z-10" />
+
+          {movies.map((movie) => (
+            <video
+              key={movie.movie.id}
+              ref={(el) => {
+                if (el) {
+                  videoRefs.current[movie.movie.id] = el;
+                }
+              }}
+              className="absolute top-0 left-0 w-full h-full object-cover"
+              style={{
+                display: selectedMovie?.movie.id === movie.movie.id ? 'block' : 'none'
+              }}
+              autoPlay={selectedMovie?.movie.id === movie.movie.id}
+              loop
+              muted
+              playsInline
+              disablePictureInPicture
+            >
+              <source src={movie.movie.video} type="video/mp4" />
+            </video>
+          ))}
         </div>
 
         <div className="flex-1 z-10 relative flex flex-col bg-gradient-to-t from-black via-black/50 to-black/50">
@@ -170,7 +215,7 @@ export default function HomePage() {
                       <button key={movie.movie.id} onClick={() => {
                         setSelectedMovieIndex(movies.findIndex(m => m.movie.id === movie.movie.id));
                       }}>
-                        <Image className='rounded-sm w-[125px] md:w-[175px]' src={movie.movie.image} alt={movie.movie.name} width={175} height={175} />
+                        <Image className='rounded-sm w-[125px] md:w-[175px] aspect-[3/4]' src={movie.movie.image} alt={movie.movie.name} width={175} height={175} />
                       </button>
                     ))
                   }
