@@ -148,6 +148,7 @@ export default function HomePage() {
               autoPlay={selectedMovie?.movie.id === movie.movie.id}
               loop
               muted
+              preload='auto'
               playsInline
               disablePictureInPicture
             >
