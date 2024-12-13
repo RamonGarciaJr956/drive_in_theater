@@ -102,8 +102,6 @@ export default function HomePage() {
             key={selectedMovie?.movie.video}
             className="absolute top-0 left-0 w-full h-full object-cover"
             autoPlay
-            preload="metadata"
-            poster={selectedMovie?.movie.image}
             loop
             muted
             playsInline
