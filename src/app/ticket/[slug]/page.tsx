@@ -114,7 +114,7 @@ export default function Page({ params }: { params: Promise<{ slug: string }> }) 
                     initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.5 }}
-                    className='container mx-auto px-4 md:px-52 md:py-4 z-50'
+                    className='container mx-auto px-4 md:px-52 md:py-4 z-20'
                 >
                     <div className='grid md:grid-cols-2 gap-8'>
                         <motion.div
