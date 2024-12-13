@@ -95,7 +95,7 @@ export default function MobileMenu({ isOpen, toggleMenuAction }: MobileMenuProps
                     >
                       <Link
                         href={'/dashboard'}
-                        onClick={() => signOut({
+                        onClick={async () => await signOut({
                           callbackUrl: '/'
                         })}
                         className="text-white text-3xl font-lexend font-light py-2 block transition-all duration-300 hover:text-white/70"

@@ -39,7 +39,7 @@ export default function Navbar() {
                     status === 'authenticated' ? (
                         <>
                             <li><Link href={'/dashboard'} className="text-white text-lg py-3 px-5 rounded-sm backdrop-blur-xl bg-white/25 hover:bg-white/50">Dashboard</Link></li>
-                            <li><a onClick={() => signOut({
+                            <li><a onClick={async () => await signOut({
                                 callbackUrl: '/'
                             })} className="text-white text-lg py-3 px-5 rounded-sm backdrop-blur-xl bg-white/25 hover:bg-white/50 hover:cursor-pointer">Sign Out</a></li>
                         </>
