@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
                         currency: 'usd',
                         product_data: {
                             name: showingAnMovie[0].movie.name,
-                            images: [showingAnMovie[0].movie.image],
+                            images: [showingAnMovie[0].movie.image!],
                             metadata: {
                                 movieId: showingAnMovie[0].movie.id,
                                 showingId: body.showingId,
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
                 showingId: body.showingId,
             },
             currency: "usd"
-        });
+        }, {});
 
         return NextResponse.json({ checkoutSessionUrl: checkoutSession.url }, { status: 200 });
     } catch (error) {
