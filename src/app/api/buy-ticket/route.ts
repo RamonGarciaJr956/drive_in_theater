@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
                 showingId: body.showingId,
             },
             currency: "usd"
-        }, {});
+        });
 
         return NextResponse.json({ checkoutSessionUrl: checkoutSession.url }, { status: 200 });
     } catch (error) {
