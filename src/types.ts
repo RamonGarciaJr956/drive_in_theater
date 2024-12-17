@@ -79,3 +79,7 @@ export type LoyaltyPoints = {
 export type LoyaltyPointsResponse = {
     loyaltyPoints: LoyaltyPoints[];
 };
+
+export type MoviesResponse = {
+    movies: MovieDetails[];
+};

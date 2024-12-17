@@ -26,6 +26,7 @@ export async function GET() {
             }
         })
         .from(showings)
+        .where(eq(showings.is_active, true))
         .leftJoin(movies, eq(showings.movie_id, movies.id));
     
     return NextResponse.json({ movies: moviesShowing }, { status: 200 });

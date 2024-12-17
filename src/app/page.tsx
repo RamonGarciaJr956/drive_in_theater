@@ -24,6 +24,7 @@ export default function HomePage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutShowing, setCheckoutShowing] = useState('');
   const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const Router = useRouter();
 
   useEffect(() => {
     const starArray = Array.from({ length: 200 }).map((_, index) => ({
@@ -95,12 +96,16 @@ export default function HomePage() {
     }).then((response) => {
       if (response.ok) {
         response.json().then((data: { checkoutSessionUrl: string }) => {
-          router.push(data.checkoutSessionUrl);
+          Router.push(data.checkoutSessionUrl);
         }).catch((error) => {
           console.error('Error parsing response:', error);
         });
       } else {
-        console.error('Error purchasing ticket:', response.statusText);
+        if(response.status === 401) {
+          router.push('/signin');
+        } else {
+          console.error('Error purchasing ticket:', response.statusText);
+        }
       }
     }).catch((error) => {
       console.error('Error purchasing ticket:', error);
