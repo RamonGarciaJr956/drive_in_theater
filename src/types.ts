@@ -83,3 +83,8 @@ export type LoyaltyPointsResponse = {
 export type MoviesResponse = {
     movies: MovieDetails[];
 };
+
+export type Tier = {
+    name: string;
+    requiredPoints: number;
+};

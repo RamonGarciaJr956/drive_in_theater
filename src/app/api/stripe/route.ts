@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { db } from '~/server/db';
-import { tickets } from '~/server/db/schema';
+import { loyalty_points, tickets } from '~/server/db/schema';
+import { eq } from 'drizzle-orm';
+import { PointsPerDollar, tiers } from "~/app/config";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = new Stripe(stripeSecretKey!);
@@ -28,6 +30,7 @@ export async function POST(req: Request) {
         if (event.type === 'checkout.session.completed') {
             if (!event.data.object.invoice) {
                 const metadata = event.data.object.metadata;
+                const subTotal = event.data.object.amount_subtotal;
 
                 if (!metadata) {
                     console.error('Metadata is missing from the event');
@@ -42,6 +45,41 @@ export async function POST(req: Request) {
                         user_id: userId,
                         showing_id: showingId
                     });
+
+                    const loyaltyPointsResult = await db.query.loyalty_points.findFirst({
+                        where: eq(loyalty_points.user_id, userId),
+                        columns: {
+                            total_points: true
+                        }
+                    });
+
+                    if(!tiers) {
+                        console.error('Tiers are missing from the config');
+                        return NextResponse.json({ error: 'Tiers are missing from the config' }, { status: 500 });
+                    }
+
+                    const newTotalPoints = (loyaltyPointsResult!.total_points ?? 0) + Math.floor((subTotal! / 100) * PointsPerDollar);
+                    
+                    const currentTier = tiers
+                        .filter(tier => tier.requiredPoints <= newTotalPoints)
+                        .sort((a, b) => b.requiredPoints - a.requiredPoints)[0]!;
+                    
+                    const nextTier = tiers
+                        .filter(tier => tier.requiredPoints > newTotalPoints)
+                        .sort((a, b) => a.requiredPoints - b.requiredPoints)[0];
+                    
+                    const tierName = currentTier.name;
+                    const nextTierPoints = nextTier ? nextTier.requiredPoints : currentTier.requiredPoints;
+                    const tierProgressPercentage = nextTier 
+                        ? Math.floor((newTotalPoints / nextTierPoints) * 100) 
+                        : 100;
+                    
+                    await db.update(loyalty_points).set({
+                        total_points: newTotalPoints,
+                        tier_name: tierName,
+                        next_tier_points: nextTierPoints,
+                        tier_progress_percentage: tierProgressPercentage
+                    }).where(eq(loyalty_points.user_id, userId));
                 } else {
                     console.error('User ID or Showing ID is missing from metadata');
                     return NextResponse.json({ error: 'User ID or Showing ID is missing from metadata' }, { status: 400 });

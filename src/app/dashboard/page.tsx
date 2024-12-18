@@ -152,6 +152,15 @@ export default function UserDashboard() {
                                         </h1>
 
                                         <div className='space-y-6'>
+                                            {tickets.length === 0 && (
+                                                <div className='text-white/70 text-center text-xl'>
+                                                    You don&apos;t have any tickets yet.
+                                                    <Link href='/#tickets'>
+                                                        <p className='text-white underline'>Buy one now!</p>
+                                                    </Link>
+                                                </div>
+                                            )}
+
                                             {tickets.map((ticket) => (
                                                 <div
                                                     key={ticket.ticket.id}

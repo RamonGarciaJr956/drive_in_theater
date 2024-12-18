@@ -25,7 +25,7 @@ function ProfileSection() {
     if (isLoading) {
         return <div>Loading...</div>
     }
-    
+
     return (
         <motion.div
             key="profile"
@@ -73,12 +73,16 @@ function ProfileSection() {
                             </span>
                         </div>
 
-                        <div className='bg-white/10 rounded-lg p-4'>
-                            <p className='text-white/70'>
-                                {loyaltyPoints!.next_tier_points - loyaltyPoints!.total_points} points until
-                                <span className='text-white font-bold ml-1'>Gold Tier</span>
-                            </p>
-                        </div>
+                        {
+                            (loyaltyPoints!.next_tier_points - loyaltyPoints!.total_points) > 0 && (
+                                <div className='bg-white/10 rounded-lg p-4'>
+                                    <p className='text-white/70'>
+                                        {loyaltyPoints!.next_tier_points - loyaltyPoints!.total_points} points until
+                                        <span className='text-white font-bold ml-1'>{loyaltyPoints?.tier_name}</span>
+                                    </p>
+                                </div>
+                            )
+                        }
                     </div>
                 </div>
             </div>

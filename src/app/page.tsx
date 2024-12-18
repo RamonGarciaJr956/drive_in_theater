@@ -25,6 +25,7 @@ export default function HomePage() {
   const [checkoutShowing, setCheckoutShowing] = useState('');
   const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const Router = useRouter();
+  const elementRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const starArray = Array.from({ length: 200 }).map((_, index) => ({
@@ -101,7 +102,7 @@ export default function HomePage() {
           console.error('Error parsing response:', error);
         });
       } else {
-        if(response.status === 401) {
+        if (response.status === 401) {
           router.push('/signin');
         } else {
           console.error('Error purchasing ticket:', response.statusText);
@@ -290,7 +291,11 @@ export default function HomePage() {
           ))}
         </div>
 
-        <section id='tickets' className='bg-black py-16 relative overflow-hidden'>
+        <section ref={elementRef} onLoad={() => {
+          if (window.location.hash === '#tickets' && elementRef.current) {
+            elementRef.current.scrollIntoView({ behavior: 'smooth' });
+          }
+        }} id='tickets' className='bg-black py-16 relative overflow-hidden'>
           <div className='max-w-6xl mx-auto relative z-10 px-4'>
             <div className='text-center mb-12'>
               <h2 className='text-4xl md:text-5xl font-lexend text-white font-bold mb-4'>Buy Your Tickets</h2>
