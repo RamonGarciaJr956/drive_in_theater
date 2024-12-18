@@ -26,7 +26,11 @@ export default function HomePage() {
   const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const Router = useRouter();
   const elementRef = useRef<HTMLDivElement>(null);
-
+  const dateInCentralTime = new Date().toLocaleString('en-US', {
+    timeZone: 'America/Chicago'
+  });
+  const [centralTimeDate, setCentralTimeDate] = useState(new Date(dateInCentralTime));
+  
   useEffect(() => {
     const starArray = Array.from({ length: 200 }).map((_, index) => ({
       id: index,
@@ -331,7 +335,7 @@ export default function HomePage() {
                       </p>
                       <p className='text-white/70 flex items-center gap-2'>
                         <Banknote />
-                        {(new Date().getDay() === discountDay) ? `Discount ${weekDays[discountDay]} $${Number(movie.movie.price) * (discountPercentage / 100)} per vehicle` : `$${movie.movie.price} per vehicle`}
+                        {(centralTimeDate.getDay() === discountDay) ? `Discount ${weekDays[discountDay]} $${Number(movie.movie.price) * (discountPercentage / 100)} per vehicle` : `$${movie.movie.price} per vehicle`}
                       </p>
                     </div>
                     <button disabled={checkoutLoading} onClick={() => { setCheckoutShowing(movie.showing.id); buyTicket(movie.showing.id) }} className='w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg flex items-center justify-center'>

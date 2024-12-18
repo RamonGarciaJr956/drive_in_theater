@@ -69,7 +69,12 @@ export async function POST(request: NextRequest) {
 
         let amount = Number(showingAnMovie[0].movie.price);
 
-        if (new Date().getDay() === discountDay) {
+        const dateInCentralTime = new Date().toLocaleString('en-US', { 
+            timeZone: 'America/Chicago' 
+        });
+        const centralTimeDate = new Date(dateInCentralTime);
+
+        if (centralTimeDate.getDay() === discountDay) {
             amount = amount * (discountPercentage / 100);
         }
 
