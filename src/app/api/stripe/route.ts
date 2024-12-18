@@ -6,92 +6,98 @@ import { eq } from 'drizzle-orm';
 import { PointsPerDollar, tiers } from "~/app/config";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripe = new Stripe(stripeSecretKey!);
+if (!stripeSecretKey) {
+    throw new Error('STRIPE_SECRET_KEY must be defined');
+}
+const stripe = new Stripe(stripeSecretKey);
 
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+if (!endpointSecret) {
+    throw new Error('STRIPE_WEBHOOK_SECRET must be defined');
+}
 
 export async function POST(req: Request) {
+    const body = await req.text();
     const sig = req.headers.get('stripe-signature');
+
     if (!sig) {
-        console.error('Stripe signature is missing');
         return NextResponse.json({ error: 'Stripe signature is missing' }, { status: 400 });
     }
+
     let event: Stripe.Event;
-    const body = await req.text();
 
     try {
-        event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
+        event = stripe.webhooks.constructEvent(body, sig, endpointSecret!);
     } catch (err) {
-        console.error('Error verifying webhook signature:', err);
-        return NextResponse.json({ error: 'Error verifying webhook signature' }, { status: 400 });
+        return NextResponse.json({ error: `Webhook Error: ${(err as Error).message}` }, { status: 400 });
     }
 
-    try {
-        if (event.type === 'checkout.session.completed') {
-            if (!event.data.object.invoice) {
-                const metadata = event.data.object.metadata;
-                const subTotal = event.data.object.amount_subtotal;
+    switch (event.type) {
+        case 'checkout.session.completed':
+            const session = event.data.object;
+
+            if (!session.invoice) {
+                const metadata = session.metadata;
+                const subTotal = session.amount_subtotal;
 
                 if (!metadata) {
-                    console.error('Metadata is missing from the event');
-                    return NextResponse.json({ error: 'Metadata is missing from the event' }, { status: 400 });
+                    return NextResponse.json({ error: 'Metadata is missing' }, { status: 400 });
                 }
 
-                const userId = metadata.userId as string | undefined;
-                const showingId = metadata.showingId as string | undefined;
+                const userId = metadata.userId;
+                const showingId = metadata.showingId;
 
                 if (userId && showingId) {
-                    await db.insert(tickets).values({
-                        user_id: userId,
-                        showing_id: showingId
-                    });
+                    try {
+                        await db.insert(tickets).values({
+                            user_id: userId,
+                            showing_id: showingId
+                        });
 
-                    const loyaltyPointsResult = await db.query.loyalty_points.findFirst({
-                        where: eq(loyalty_points.user_id, userId),
-                        columns: {
-                            total_points: true
+                        const loyaltyPointsResult = await db.query.loyalty_points.findFirst({
+                            where: eq(loyalty_points.user_id, userId),
+                            columns: {
+                                total_points: true
+                            }
+                        });
+
+                        if (!tiers) {
+                            return NextResponse.json({ error: 'Tiers are missing from config' }, { status: 500 });
                         }
-                    });
 
-                    if(!tiers) {
-                        console.error('Tiers are missing from the config');
-                        return NextResponse.json({ error: 'Tiers are missing from the config' }, { status: 500 });
+                        const newTotalPoints = (loyaltyPointsResult?.total_points ?? 0) +
+                            Math.floor((subTotal! / 100) * PointsPerDollar);
+
+                        const currentTier = tiers
+                            .filter(tier => tier.requiredPoints <= newTotalPoints)
+                            .sort((a, b) => b.requiredPoints - a.requiredPoints)[0]!;
+
+                        const nextTier = tiers
+                            .filter(tier => tier.requiredPoints > newTotalPoints)
+                            .sort((a, b) => a.requiredPoints - b.requiredPoints)[0];
+
+                        const tierName = currentTier.name;
+                        const nextTierPoints = nextTier ? nextTier.requiredPoints : currentTier.requiredPoints;
+                        const tierProgressPercentage = nextTier
+                            ? Math.floor((newTotalPoints / nextTierPoints) * 100)
+                            : 100;
+
+                        await db.update(loyalty_points).set({
+                            total_points: newTotalPoints,
+                            tier_name: tierName,
+                            next_tier_points: nextTierPoints,
+                            tier_progress_percentage: tierProgressPercentage
+                        }).where(eq(loyalty_points.user_id, userId));
+
+                    } catch (error) {
+                        console.error('Error processing checkout:', error);
+                        return NextResponse.json({ error: 'Error processing checkout' }, { status: 500 });
                     }
-
-                    const newTotalPoints = (loyaltyPointsResult!.total_points ?? 0) + Math.floor((subTotal! / 100) * PointsPerDollar);
-                    
-                    const currentTier = tiers
-                        .filter(tier => tier.requiredPoints <= newTotalPoints)
-                        .sort((a, b) => b.requiredPoints - a.requiredPoints)[0]!;
-                    
-                    const nextTier = tiers
-                        .filter(tier => tier.requiredPoints > newTotalPoints)
-                        .sort((a, b) => a.requiredPoints - b.requiredPoints)[0];
-                    
-                    const tierName = currentTier.name;
-                    const nextTierPoints = nextTier ? nextTier.requiredPoints : currentTier.requiredPoints;
-                    const tierProgressPercentage = nextTier 
-                        ? Math.floor((newTotalPoints / nextTierPoints) * 100) 
-                        : 100;
-                    
-                    await db.update(loyalty_points).set({
-                        total_points: newTotalPoints,
-                        tier_name: tierName,
-                        next_tier_points: nextTierPoints,
-                        tier_progress_percentage: tierProgressPercentage
-                    }).where(eq(loyalty_points.user_id, userId));
-                } else {
-                    console.error('User ID or Showing ID is missing from metadata');
-                    return NextResponse.json({ error: 'User ID or Showing ID is missing from metadata' }, { status: 400 });
                 }
-
             }
-        } else {
-            console.log(`Unhandled event type: ${event.type}`);
-        }
-    } catch (error) {
-        console.error('Error processing webhook event:', error);
-        return NextResponse.json({ error: 'Error processing webhook event' }, { status: 500 });
+            break;
+        default:
+            console.log(`Unhandled event type ${event.type}`);
     }
 
     return NextResponse.json({ received: true }, { status: 200 });
