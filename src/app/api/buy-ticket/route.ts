@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         let amount = Number(showingAnMovie[0].movie.price);
 
         if (new Date().getDay() === discountDay) {
-            amount = amount - (amount * discountPercentage) / 100;
+            amount = amount * (discountPercentage / 100);
         }
 
         if (amount <= 0) {
