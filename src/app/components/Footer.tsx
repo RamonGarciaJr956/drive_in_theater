@@ -17,7 +17,7 @@ function Footer() {
                     </div>
                     <div className='flex space-x-4'>
                         <Link
-                            href='https://www.instagram.com/valleysdriveintheater/'
+                            href='https://www.instagram.com/'
                             target="_blank"
                             className='text-white/50 hover:text-white'
                         >

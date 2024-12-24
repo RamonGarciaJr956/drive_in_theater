@@ -8,5 +8,5 @@ export default {
   dbCredentials: {
     url: env.DATABASE_URL,
   },
-  tablesFilter: ["valleys_drive_in_rework_*"],
+  tablesFilter: ["drive_in_theater_*"],
 } satisfies Config;

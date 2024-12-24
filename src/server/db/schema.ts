@@ -19,7 +19,7 @@ import { type AdapterAccount } from "next-auth/adapters";
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = pgTableCreator((name) => `valleys_drive_in_rework_${name}`);
+export const createTable = pgTableCreator((name) => `drive_in_theater_${name}`);
 
 export const users = createTable("user", {
   id: varchar("id", { length: 255 })

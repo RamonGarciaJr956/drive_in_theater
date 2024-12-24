@@ -1,6 +1,5 @@
 import "~/styles/globals.css";
 
-import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 import { SessionProvider } from 'next-auth/react'
 
@@ -15,7 +14,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <SessionProvider>
-      <html lang="en" className={`${GeistSans.variable}`}>
+      <html lang="en">
         <body>{children}</body>
       </html>
     </SessionProvider>
